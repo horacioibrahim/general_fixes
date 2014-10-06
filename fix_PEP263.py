@@ -4,6 +4,7 @@ Check if python files has first line with PEP-0263 in compliance ;)
 
 # TODO: if script to keep call #!/...
 # TODO: Report files changed
+# TODO: deeply directories 
 
 import os
 import re
@@ -14,14 +15,14 @@ import sys
 CODING = "UTF-8"
 
 def get_pyfiles(abs_dir):
-	"""
+	r"""
 	List files .py in directory and its subdirectories
 
 	>>> tempdir = tempfile.mkdtemp()
 	>>> test_py = os.path.join(tempdir, 'test.py')
 	>>> f = open(test_py, 'w')
-	>>> f.write('loren ipsum line')
-	>>> f.write('loren ipsum line')
+	>>> f.write('loren ipsum line\n')
+	>>> f.write('loren ipsum line\n')
 	>>> f.close()
 	>>> type(get_pyfiles(tempdir))
 	<type 'list'>
@@ -45,25 +46,23 @@ def get_pyfiles(abs_dir):
 	return lists
 
 def check_file(filename):
-	"""
+	r"""
 	Checks if first line of a file has compliance with PEP-0263
 	
 	>>> checker = True
 	>>> tempdir = tempfile.mkdtemp()
 	>>> test_py = os.path.join(tempdir, 'test.py')
 	>>> f = open(test_py, 'w')
-	>>> f.write('loren ipsum line 1')
-	>>> f.write('loren ipsum line 2')
+	>>> f.write('loren ipsum line 1\n')
+	>>> f.write('loren ipsum line 2\n')
 	>>> f.close()
 	>>> list_files = get_pyfiles(tempdir)
 	>>> check_file(list_files[0]) 	
 	False
 	>>> os.remove(test_py)
 	>>> f = open(test_py, 'w')
-	>>> f.write("# -*- coding: utf-8 -*-")
-	>>> f.close()
-	>>> f = open(test_py, 'a')
-	>>> f.write("continua na segunda linha")
+	>>> f.write("# -*- coding: utf-8 -*-\n")
+	>>> f.write("continua na segunda linha\n")
 	>>> f.close()
 	>>> list_files = get_pyfiles(tempdir)
 	>>> check_file(list_files[0])
@@ -71,10 +70,8 @@ def check_file(filename):
 	>>> os.remove(test_py)
 	>>> # Test with script shell
 	>>> f = open(test_py, 'w')
-	>>> f.write('#!/usr/bin/env python')
-	>>> f.close()
-	>>> f = open(test_py, 'a')
-	>>> f.write('# -*- coding: UTF-8 -*-')
+	>>> f.write('#!/usr/bin/env python\n')
+	>>> f.write('# -*- coding: UTF-8 -*-\n')
 	>>> f.close()
 	>>> check_file(test_py)
 	True
@@ -97,20 +94,41 @@ def check_file(filename):
 	return False 
 
 def change_file(filename):
-	"""
+	r"""
 	Add comments for PEP-0263 with utf-8
 
 	>>> tempdir = tempfile.mkdtemp()
 	>>> test_py = os.path.join(tempdir, 'test.py')
 	>>> f = open(test_py, 'w')
-	>>> f.write('loren ipsum line')
-	>>> f.write('loren ipsum line')
+	>>> f.write('loren ipsum line\n')
+	>>> f.write('loren ipsum line\n')
 	>>> f.close()	 
 	>>> change_file(test_py)
 	0
 	>>> check_file(test_py)
 	True
+	>>> os.remove(test_py)
+	>>> f = open(test_py, 'w')
+	>>> f.write('#!/bin/bash/python\n')
+	>>> f.write('# -*- coding: utf-8 -*-\n')
+	>>> f.close()
+	>>> check_file(test_py)
+	True
+	>>> os.remove(test_py)
+	>>> f = open(test_py, 'w')
+	>>> f.write('#!/bin/bash/python\n')
+	>>> f.write('import re\n')
+	>>> f.close()
+	>>> check_file(test_py)
+	False
+	>>> change_file(test_py)
+	0
+	>>> os.remove(test_py)
+	>>> os.rmdir(tempdir)
 	"""
+
+	# Is command line script?
+	is_script = re.compile(r'^#!').match
 
 	# bkp filename
 	bkp = filename + '.checker'
@@ -141,8 +159,10 @@ def change_file(filename):
 		coding = "# -*- coding: {} -*-\n".format(CODING)
 
 		with open(filename, 'w') as f:
+			if is_script(content[0]):
+				f.write(content[0]) # write PEP263 in second line
 			f.write(coding)
-			f.writelines(content)	
+			f.writelines(content[1:]) # skip first line already insert
 		
 		f.close()
 		# if all occured fine. Remove bkp
@@ -163,8 +183,8 @@ if __name__ == '__main__':
 		abs_dir = sys.argv[1]
 		checker(abs_dir)
 	except IndexError, e:
-		print("Warnings: No arguments with absolute path. Tests running...OK?")
-
+		print("Warnings: No arguments with absolute path.")
+		
 		
 
 		
